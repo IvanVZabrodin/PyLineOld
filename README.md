@@ -4,7 +4,7 @@ The commands available so far are:
 
 () = parameters
 
-Hi,
+Hi,\n
 Hi lower,
 Says (sentence(s)),
 Getobjs,
