@@ -1,6 +1,5 @@
 from types import FunctionType as FT
 
-
 excdata = []
 funcdata = {}
 

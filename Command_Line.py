@@ -107,5 +107,8 @@ myterm.Add("getobjs", 'geto')
 myterm.Add("getmults", 'mult')
 myterm.Add("says", 'say')
 myterm.Get()["hi"].family("parent", "lower")
+
+
 command = input("Command: ")
+
 call(myterm, command)
