@@ -1,7 +1,9 @@
 from types import FunctionType as FT
+import contextlib, io
 
 excdata = []
 funcdata = {}
+func_code = {}
 
 class CustomExceptions():
     def __init__(self):
@@ -40,6 +42,7 @@ class CustomFunctions():
         NewFunc = FT(NewCode.co_consts[0], (({**paraglobs['globs'], **globals()} if 'globs' in paraglobs else globals())), name)
         if not name in funcdata:
             funcdata[name] = NewFunc
+            func_code[name] = code
             return NewFunc
         else:
             print("Custom Function %s already exists." %name)
@@ -53,3 +56,13 @@ class CustomFunctions():
             print("Custom Function %s deleted." %name)
         else:
             print("Custom Function %s does not exist" %name)
+
+def raises(func, params):
+    try:
+        with contextlib.redirect_stdout(io.StringIO()):
+            func(*params)
+    except Exception as e:
+        print(e)
+        return True
+    else:
+        return False

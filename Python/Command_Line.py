@@ -1,6 +1,7 @@
-import ctypes
+import ctypes, types, string
 from CustomItems import *
 ctypes.windll.kernel32.SetConsoleTitleW("PyLine")
+
 
 
 class Terminal():
@@ -26,6 +27,8 @@ class Terminal():
         else:
             print("Command %s does not exist" %name)
 
+active_term = Terminal()
+
 class func_controller():
     def __init__(self, func_code, build_type, termin):
         self.func_cd = func_code
@@ -33,16 +36,12 @@ class func_controller():
         self.term = termin
 
     def run(self, *params):
+        global active_term
+        active_term = self.term
         try:
-            if len(self.term.func.Get()[self.func_cd]['params']) == len(params):
-                self.func_cd(*params)
-            else:
-                print("The command has too many arguments.")
-        except KeyError:
-            try:
-                self.func_cd(*params)
-            except TypeError:
-                print('Arguments are incorrect')
+            self.func_cd(*params)
+        except TypeError:
+            print('Arguments are incorrect')
            
 
 #define relationships opposite
@@ -52,7 +51,7 @@ class Command():
         self.str = str
         self.term = termin
         self.relations = {}
-        self.func_con = func_controller(self.term.func.Get()[func_code], bt, self.term)
+        self.func_con = func_controller(self.term.func.Get()[func_code] if not callable(func_code) else func_code, bt, self.term)
         self.term.Objects[str] = {"rels": self.relations, "fnccon": self.func_con}
 
     def family(self, relt, ostr):
@@ -90,7 +89,86 @@ def call(term, comm):
     command = input("Command: ")
     call(term, command)
 
+l = 0
 
+def inp(lines):
+    global l
+    line = input("-"+("-------" if l == 0 else "line:%s"%l if l > 9 else "line:%s-"%l)+"--> ")
+    if line.replace(" ", "")[0:2] == "||":
+        lc = line.split(" ")
+        if lc[0][2:] == "line" and lc[1].isdigit() and int(lc[1]) <= len(lines):
+            l = int(lc[1])
+        if lc[0][2:] == "code":
+            print(*lines)
+        if lc[0][2:] == "exit":
+            lines.append("")
+            lines.extend(["\n", "\n"])
+    elif l != 0:
+        lines[l - 1] = " " + line + "\n"
+        l = 0
+    elif l == 0:
+        lines.append(line + "\n")
+
+
+def funcmake(name, *paras, **kwargs):
+    lins = likwargs["lines"] if "lines" in kwargs else []
+    paras = list(paras)
+    l = 0
+    parastest = []
+    if paras:
+        for para in paras:
+            if para[0] == "*":
+                stop = False
+                run = 1
+                while not stop:
+                    spec = input("%s|%s|Value: "%(para, run))
+                    if spec == "||stop":
+                        stop = True
+                    else:
+                        print("In the error check item %s in %s will be %s."%(run, para, spec))
+                        parastest.append(spec)
+                        run += 1
+            elif "**" in para:
+                print("Kwargs are not supported yet.")
+                return
+                #stop = False
+                #run = 1
+                #while not stop:
+                #    speck = input("%s|%s|Keyword: "%(para, run))
+                #    specv = input("%s|%s|Value: "%(para, speck))
+
+                #    if "||stop" in [speck, specv]:
+                #        stop = True
+                #    else:
+                #        print("In the error check %s in %s will be %s."%(speck, para, specv))
+                #        parastest.append()
+                #        run += 1
+            elif any(not char in para for char in list(string.ascii_letters)):
+                print("Symbols not supported")
+                return
+            else:
+                spec = input("%s|Value: "%(para))
+                if spec == "||stop":
+                    stop = True
+                else:
+                    print("In the error check %s will be %s."%(para, spec))
+                    parastest.append(spec)
+
+    def inpi():
+        while lins[-2:].count("\n") < 2:
+            inp(lins)
+    inpi()
+    if not "" in lins:
+        NC = compile("def "+name+"("+(', '.join(paras) if paras else "")+"):\n "+''.join(lins[:-2]), name, "exec")
+        NF = types.FunctionType(NC.co_consts[0], globals(), name)
+        if raises(NF, parastest):
+            print("Error, please try again.")
+            del lins[-2:]
+            inpi()
+        else:
+            print(paras)
+            active_term.func.Add(str(name + "M"), ''.join(lins[:-2]), params=paras)
+            active_term.Add(name, str(name + "M"))
 
 myterm = Terminal()
 #funcs
@@ -100,14 +178,13 @@ myterm.func.Add("say", "print(*txt)", params=['*txt'])
 myterm.func.Add("mult", "try:\n  print(int(a) * int(b))\n except ValueError:\n  print('This is not a int and an int')", params=['a', 'b'])
 myterm.func.Add("geto", "print(objs)", globs={'objs': myterm.Objects})
 
-
 myterm.Add("hi", 'sayhi')
 myterm.Add("lower", 'sayhil')
 myterm.Add("getobjs", 'geto')
 myterm.Add("getmults", 'mult')
 myterm.Add("says", 'say')
+myterm.Add("create", funcmake)
 myterm.Get()["hi"].family("parent", "lower")
-
 
 command = input("Command: ")
 
