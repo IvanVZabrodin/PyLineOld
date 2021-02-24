@@ -1,8 +1,7 @@
-import ctypes, types, string
+import types, string
+from os import system
 from CustomItems import *
-ctypes.windll.kernel32.SetConsoleTitleW("PyLine")
-
-
+system("title " + "PyLine")
 
 class Terminal():
     def __init__(self):
@@ -91,7 +90,7 @@ def call(term, comm):
 
 l = 0
 
-def inp(lines):
+def inp(lines, pasa):
     global l
     line = input("-"+("-------" if l == 0 else "line:%s"%l if l > 9 else "line:%s-"%l)+"--> ")
     if line.replace(" ", "")[0:2] == "||":
@@ -101,23 +100,105 @@ def inp(lines):
         if lc[0][2:] == "code":
             print(*lines)
         if lc[0][2:] == "exit":
-            lines.append("")
-            lines.extend(["\n", "\n"])
+            lines.extend(["", " \n", " \n"])
+        if lc[0][2:] == "paras":
+            pasa()
     elif l != 0:
         lines[l - 1] = " " + line + "\n"
         l = 0
     elif l == 0:
-        lines.append(line + "\n")
+        lines.append(" " + line + "\n")
 
 
-def funcmake(name, *paras, **kwargs):
-    lins = likwargs["lines"] if "lines" in kwargs else []
+
+def funcmake(name, *paras):
+    if name in active_term.func.Get().keys():
+        print("Function %s already exists."%name)
+        return
+    lins = []
     paras = list(paras)
     l = 0
     parastest = []
-    if paras:
+    brk = False
+    def parastart():
+        if paras:
+            for para in paras:
+                if set(para).difference(string.ascii_letters + '*'):
+                    print("Symbols not supported")
+                    brk = True
+                    return
+                elif para[0] == "*":
+                    stop = False
+                    run = 1
+                    while not stop:
+                        spec = input("%s|%s|Value: "%(para, run))
+                        if spec == "||stop":
+                            stop = True
+                        else:
+                            print("In the error check item %s in %s will be %s."%(run, para, spec))
+                            parastest.append(spec)
+                            run += 1
+                elif "**" in para:
+                    print("Kwargs are not supported yet.")
+                    return
+                    #stop = False
+                    #run = 1
+                    #while not stop:
+                    #    speck = input("%s|%s|Keyword: "%(para, run))
+                    #    specv = input("%s|%s|Value: "%(para, speck))
+
+                    #    if "||stop" in [speck, specv]:
+                    #        stop = True
+                    #    else:
+                    #        print("In the error check %s in %s will be %s."%(speck, para, specv))
+                    #        parastest.append()
+                    #        run += 1
+                else:
+                    spec = input("%s|Value: "%(para))
+                    if spec == "||stop":
+                        stop = True
+                    else:
+                        print("In the error check %s will be %s."%(para, spec))
+                        parastest.append(spec)
+    parastart()
+    if brk:
+        return
+    def useless():
+        pass
+    def inpi():
+        while lins[-2:].count(" \n") < 2:
+            inp(lins, useless)
+    inpi()
+    if not "" in lins:
+        lins[0] = lins[0][1:]
+        NC = compile("def "+name+"("+(', '.join(paras) if paras else "")+"):\n "+''.join(lins[:-2]), name, "exec")
+        NF = types.FunctionType(NC.co_consts[0], globals(), name)
+        if raises(NF, parastest):
+            print("Error, please try again.")
+            lins = lins[:-2]
+            inpi()
+        else:
+            active_term.func.Add(str(name + "M"), ''.join(lins[:-2]), params=paras)
+            active_term.Add(name, str(name + "M"))
+
+
+
+
+
+def funcedit(name):
+    if not name + "M" in active_term.func.Get().keys():
+        print("Function %s does not exist."%name)
+        return
+    paras = active_term.func.GetC()[name + "M"]["params"]
+    parastest = []
+    def parag():
+        pars = input("Parameters: ")
+        paras = pars.split(" ")
         for para in paras:
-            if para[0] == "*":
+            if set(para).difference(string.ascii_letters + '*'):
+                print("Symbols not supported")
+                return
+            elif para[0] == "*":
                 stop = False
                 run = 1
                 while not stop:
@@ -143,9 +224,6 @@ def funcmake(name, *paras, **kwargs):
                 #        print("In the error check %s in %s will be %s."%(speck, para, specv))
                 #        parastest.append()
                 #        run += 1
-            elif any(not char in para for char in list(string.ascii_letters)):
-                print("Symbols not supported")
-                return
             else:
                 spec = input("%s|Value: "%(para))
                 if spec == "||stop":
@@ -153,22 +231,23 @@ def funcmake(name, *paras, **kwargs):
                 else:
                     print("In the error check %s will be %s."%(para, spec))
                     parastest.append(spec)
-
-    def inpi():
-        while lins[-2:].count("\n") < 2:
-            inp(lins)
-    inpi()
+    lins = [active_term.func.GetC()[name + "M"]["code"]]
+    print(lins)
+    def inpd():
+        while lins[-2:].count(" \n") < 2:
+            inp(lins, parag)
+    inpd()
     if not "" in lins:
+        lins[0] = lins[0][1:]
         NC = compile("def "+name+"("+(', '.join(paras) if paras else "")+"):\n "+''.join(lins[:-2]), name, "exec")
         NF = types.FunctionType(NC.co_consts[0], globals(), name)
         if raises(NF, parastest):
             print("Error, please try again.")
-            del lins[-2:]
-            inpi()
+            lins[-2:] = lins[:-2]
+            inpd()
         else:
-            print(paras)
+            active_term.func.Delete(str(name + "M"))
             active_term.func.Add(str(name + "M"), ''.join(lins[:-2]), params=paras)
-            active_term.Add(name, str(name + "M"))
 
 myterm = Terminal()
 #funcs
@@ -184,6 +263,7 @@ myterm.Add("getobjs", 'geto')
 myterm.Add("getmults", 'mult')
 myterm.Add("says", 'say')
 myterm.Add("create", funcmake)
+myterm.Add("edit", funcedit)
 myterm.Get()["hi"].family("parent", "lower")
 
 command = input("Command: ")

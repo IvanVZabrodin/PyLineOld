@@ -42,13 +42,16 @@ class CustomFunctions():
         NewFunc = FT(NewCode.co_consts[0], (({**paraglobs['globs'], **globals()} if 'globs' in paraglobs else globals())), name)
         if not name in funcdata:
             funcdata[name] = NewFunc
-            func_code[name] = code
+            func_code[name] = {"code": code, "params": paraglobs['params'] if 'params' in paraglobs else []}
             return NewFunc
         else:
             print("Custom Function %s already exists." %name)
 
     def Get(self):
         return funcdata
+
+    def GetC(self):
+        return func_code
 
     def Delete(self, name):
         if name in funcdata:
