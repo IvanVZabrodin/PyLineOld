@@ -4,6 +4,7 @@ import contextlib, io
 excdata = []
 funcdata = {}
 func_code = {}
+func_prst = {}
 
 class CustomExceptions():
     def __init__(self):
@@ -47,16 +48,28 @@ class CustomFunctions():
         else:
             print("Custom Function %s already exists." %name)
 
+    def AddP(self, name, partst):
+        if name in funcdata:
+            func_prst[name] = partst
+        else:
+            print("Custom Function %s does not exist" %name)
+
     def Get(self):
         return funcdata
 
     def GetC(self):
         return func_code
 
-    def Delete(self, name):
+    def GetP(self):
+        return func_prst
+
+    def Delete(self, name, *args):
         if name in funcdata:
             del funcdata[name]
-            print("Custom Function %s deleted." %name)
+            del func_code[name]
+            del func_prst[name]
+            if not args:
+                print("Custom Function %s deleted." %name)
         else:
             print("Custom Function %s does not exist" %name)
 

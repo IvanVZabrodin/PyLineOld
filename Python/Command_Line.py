@@ -19,12 +19,15 @@ class Terminal():
     def Get(self):
         return self.Comms
 
-    def Delete(self, name):
+    def Delete(self, name, *args):
         if name in self.Comms:
             del self.Comms[name]
-            print("Command %s deleted." %name)
+            if not args:
+                print("Command %s deleted." %name)
         else:
             print("Command %s does not exist" %name)
+
+
 
 active_term = Terminal()
 
@@ -44,7 +47,7 @@ class func_controller():
            
 
 #define relationships opposite
-opposite_rels = {"child": "parent", "parent": "child", "sibling": "sibling"}
+opposite_rels = {"child": "parent", "parent": "child"}
 class Command():
     def __init__(self, str, func_code, termin, bt):
         self.str = str
@@ -59,7 +62,9 @@ class Command():
             self.relations[ostr] = relt
 
         except KeyError or TypeError:
-             raise self.term.exc.Get()["CommandError"]("You are trying to attach a %s relation type to the unknown Command object %s."%(opposite_rels[relt], ostr))
+             #raise self.term.exc.Get()["CommandError"]("You are trying to attach a %s relation type to the unknown Command object %s."%(opposite_rels[relt], ostr))
+             print("You are trying to attach a %s relation type to the unknown Command object %s."%(opposite_rels[relt], ostr))
+             return
 
 def call(term, comm):
     item, found, att = 0, False, 0
@@ -90,7 +95,7 @@ def call(term, comm):
 
 l = 0
 
-def inp(lines, pasa):
+def inp(lines, pasa, inc):
     global l
     line = input("-"+("-------" if l == 0 else "line:%s"%l if l > 9 else "line:%s-"%l)+"--> ")
     if line.replace(" ", "")[0:2] == "||":
@@ -101,10 +106,11 @@ def inp(lines, pasa):
             print(*lines)
         if lc[0][2:] == "exit":
             lines.extend(["", " \n", " \n"])
+            return False
         if lc[0][2:] == "paras":
             pasa()
     elif l != 0:
-        lines[l - 1] = " " + line + "\n"
+        lines[l - 1] = (" " if l != 1 else "") + line + "\n"
         l = 0
     elif l == 0:
         lines.append(" " + line + "\n")
@@ -123,7 +129,7 @@ def funcmake(name, *paras):
     def parastart():
         if paras:
             for para in paras:
-                if set(para).difference(string.ascii_letters + '*'):
+                if set(para).difference(string.ascii_letters + string.digits + '*'):
                     print("Symbols not supported")
                     brk = True
                     return
@@ -140,6 +146,7 @@ def funcmake(name, *paras):
                             run += 1
                 elif "**" in para:
                     print("Kwargs are not supported yet.")
+                    brk = True
                     return
                     #stop = False
                     #run = 1
@@ -165,21 +172,28 @@ def funcmake(name, *paras):
         return
     def useless():
         pass
-    def inpi():
+    
+    incorrect = True
+    r = 0
+    while incorrect:
+        r += 1
         while lins[-2:].count(" \n") < 2:
-            inp(lins, useless)
-    inpi()
-    if not "" in lins:
-        lins[0] = lins[0][1:]
-        NC = compile("def "+name+"("+(', '.join(paras) if paras else "")+"):\n "+''.join(lins[:-2]), name, "exec")
-        NF = types.FunctionType(NC.co_consts[0], globals(), name)
-        if raises(NF, parastest):
-            print("Error, please try again.")
-            lins = lins[:-2]
-            inpi()
-        else:
-            active_term.func.Add(str(name + "M"), ''.join(lins[:-2]), params=paras)
-            active_term.Add(name, str(name + "M"))
+            i = inp(lins, useless, incorrect)
+            if i == False:
+                incorrect = i
+        if not "" in lins:
+            if r == 1: lins[0] = lins[0][1:]
+            NC = compile("def "+name+"("+(', '.join(paras) if paras else "")+"):\n "+''.join(lins[:-2]), name, "exec")
+            NF = types.FunctionType(NC.co_consts[0], globals(), name)
+            if raises(NF, parastest):
+                print("Error, please try again.")
+                lins = lins[:-2]
+                continue
+            else:
+                active_term.func.Add(str(name + "M"), ''.join(lins[:-2]), params=paras)
+                active_term.Add(name, str(name + "M"))
+                active_term.func.AddP(str(name + "M"), parastest)
+                incorrect = False
 
 
 
@@ -190,13 +204,19 @@ def funcedit(name):
         print("Function %s does not exist."%name)
         return
     paras = active_term.func.GetC()[name + "M"]["params"]
-    parastest = []
+    parastest = active_term.func.GetP()[name + "M"]
     def parag():
         pars = input("Parameters: ")
+        nonlocal paras, parastest
+        oldpt = parastest
+        del parastest[:]
+        oldp = paras
         paras = pars.split(" ")
         for para in paras:
-            if set(para).difference(string.ascii_letters + '*'):
+            if set(para).difference(string.ascii_letters + string.digits + '*'):
                 print("Symbols not supported")
+                paras = oldp
+                parastest = oldpt
                 return
             elif para[0] == "*":
                 stop = False
@@ -232,30 +252,39 @@ def funcedit(name):
                     print("In the error check %s will be %s."%(para, spec))
                     parastest.append(spec)
     lins = [active_term.func.GetC()[name + "M"]["code"]]
-    print(lins)
-    def inpd():
+    print(lins, paras)
+    incorrec = True
+    while incorrec:
         while lins[-2:].count(" \n") < 2:
-            inp(lins, parag)
-    inpd()
-    if not "" in lins:
-        lins[0] = lins[0][1:]
-        NC = compile("def "+name+"("+(', '.join(paras) if paras else "")+"):\n "+''.join(lins[:-2]), name, "exec")
-        NF = types.FunctionType(NC.co_consts[0], globals(), name)
-        if raises(NF, parastest):
-            print("Error, please try again.")
-            lins[-2:] = lins[:-2]
-            inpd()
-        else:
-            active_term.func.Delete(str(name + "M"))
-            active_term.func.Add(str(name + "M"), ''.join(lins[:-2]), params=paras)
+            i = inp(lins, parag, incorrec)
+            print(paras)
+            if i == False:
+                incorrec = i
+        if not "" in lins:
+            NC = compile("def "+name+"("+(', '.join(paras) if paras else "")+"):\n "+''.join(lins[:-2]), name, "exec")
+            NF = types.FunctionType(NC.co_consts[0], globals(), name)
+            if raises(NF, parastest):
+                print("Error, please try again.")
+                lins = lins[:-2]
+                continue
+            else:
+                active_term.func.Delete(str(name + "M"), True)
+                active_term.Delete(name, True)
+                active_term.func.Add(str(name + "M"), ''.join(lins[:-2]), params=paras)
+                active_term.Add(name, name + "M")
+                active_term.func.AddP(name + "M", parastest)
+                incorrec = False
 
 myterm = Terminal()
 #funcs
+
+
 myterm.func.Add("sayhi", "print('HELLO')")
 myterm.func.Add("sayhil", "print('hello')")
 myterm.func.Add("say", "print(*txt)", params=['*txt'])
 myterm.func.Add("mult", "try:\n  print(int(a) * int(b))\n except ValueError:\n  print('This is not a int and an int')", params=['a', 'b'])
 myterm.func.Add("geto", "print(objs)", globs={'objs': myterm.Objects})
+myterm.func.Add("fam", "if fmt in opposite_rels.keys():\n  objs.Get()[comm].family(fmt, comm1)\n else:\n  print('No such family type')", globs={'opposite_rels': opposite_rels, 'objs': myterm}, params=['comm', 'fmt', 'comm1'])
 
 myterm.Add("hi", 'sayhi')
 myterm.Add("lower", 'sayhil')
@@ -264,6 +293,7 @@ myterm.Add("getmults", 'mult')
 myterm.Add("says", 'say')
 myterm.Add("create", funcmake)
 myterm.Add("edit", funcedit)
+myterm.Add("family", 'fam')
 myterm.Get()["hi"].family("parent", "lower")
 
 command = input("Command: ")
