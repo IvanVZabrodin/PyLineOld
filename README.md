@@ -9,6 +9,6 @@ Hi lower,
 Says (sentence(s)),  
 Getobjs,  
 getmults,  
-Create (name, params) - then it will ask you to enter the values when checking if it will result in an error, <brk>
+Create (name, params) - then it will ask you to enter the values when checking if it will result in an error,  
 Edit (name),  
 Family (name, name2, type)  
