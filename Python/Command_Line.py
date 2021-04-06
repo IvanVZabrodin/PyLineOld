@@ -1,6 +1,6 @@
 import types, string
 from os import system
-from CustomItems import *
+from Python.CustomItems import *
 system("title " + "PyLine")
 
 class Terminal():
@@ -67,20 +67,20 @@ class Command():
              return
 
 def call(term, comm):
-    item, found, att = 0, False, 0
+    item, found, overfound = 0, False, True
     comm = comm.split(" ")
     for i in range(0, len(comm)):
         try:
-            if (comm[i] in term.Objects.keys() and att == 0) or (comm[i] in term.Objects.keys() and term.Objects[comm[item]]["rels"].get(comm[item + 1]) == "parent"):
+            if (comm[i] in term.Objects.keys() and i == 0) or (comm[i] in term.Objects.keys() and term.Objects[comm[item]]["rels"].get(comm[item + 1]) == "parent"):
                 item = i
                 found = True
         except IndexError:
             pass
-        att += 1
-    if not found:
-        item = -1
-
-    if comm[item] in term.Objects.keys():
+        except KeyError:
+            if i == 0:
+                print("The command is invalid.")
+                overfound = False
+    if comm[item] in term.Objects.keys() and overfound:
         if not "child" in term.Objects[comm[0]]["rels"].values():
             try:
                 term.Objects[comm[item]]["fnccon"].run(*comm[item + 1 if found else len(comm) - 1:])
@@ -277,7 +277,7 @@ def funcedit(name):
 
 myterm = Terminal()
 #funcs
-
+#with open('funcs.txt', )
 
 myterm.func.Add("sayhi", "print('HELLO')")
 myterm.func.Add("sayhil", "print('hello')")
