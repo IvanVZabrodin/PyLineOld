@@ -1,6 +1,6 @@
 import types, string
 from os import system
-from Python.CustomItems import *
+from CustomItems import *
 system("title " + "PyLine")
 
 class Terminal():
@@ -95,7 +95,7 @@ def call(term, comm):
 
 l = 0
 
-def inp(lines, pasa, inc):
+def inp(lines: list, pasa, inc):
     global l
     line = input("-"+("-------" if l == 0 else "line:%s"%l if l > 9 else "line:%s-"%l)+"--> ")
     if line.replace(" ", "")[0:2] == "||":
@@ -103,7 +103,7 @@ def inp(lines, pasa, inc):
         if lc[0][2:] == "line" and lc[1].isdigit() and int(lc[1]) <= len(lines):
             l = int(lc[1])
         if lc[0][2:] == "code":
-            print(*lines)
+            print(''.join(lines))
         if lc[0][2:] == "exit":
             lines.extend(["", " \n", " \n"])
             return False
@@ -207,7 +207,6 @@ def funcedit(name):
     parastest = active_term.func.GetP()[name + "M"]
     def parag():
         pars = input("Parameters: ")
-        nonlocal paras, parastest
         oldpt = parastest
         del parastest[:]
         oldp = paras
