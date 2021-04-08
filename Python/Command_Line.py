@@ -1,5 +1,5 @@
 import types, string
-import os
+import os, sys
 from CustomItems import *
 from PyMation.files import *
 os.system("title " + "PyLine")
@@ -358,13 +358,14 @@ myterm = Terminal("myterm")
 myterm.func.Add("geto", "print(objs)", globs={'objs': myterm.Objects})
 myterm.func.Add("fam", "if fmt in opposite_rels.keys():\n  objs.Get()[comm].family(fmt, comm1)\n else:\n  print('No such family type')", globs={'opposite_rels': opposite_rels, 'objs': myterm}, params=['comm', 'fmt', 'comm1'])
 myterm.func.Add("delt", "term.Delete(nme)", globs={"term": myterm}, params={"nme"})
-
+myterm.func.Add("ex", "sys.exit()", globs={"sys": sys})
 
 myterm.Add("getobjs", 'geto', 'globular')
 myterm.Add("create", funcmake)
 myterm.Add("edit", funcedit)
 myterm.Add("family", 'fam', "globular")
 myterm.Add("delete", "delt", "globular")
+myterm.Add("stop", "ex", "globular")
 
 command = input("Command: ")
 
