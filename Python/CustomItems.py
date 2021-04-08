@@ -43,7 +43,8 @@ class CustomFunctions():
         NewFunc = FT(NewCode.co_consts[0], (({**paraglobs['globs'], **globals()} if 'globs' in paraglobs else globals())), name)
         if not name in funcdata:
             funcdata[name] = NewFunc
-            func_code[name] = {"code": code, "params": paraglobs['params'] if 'params' in paraglobs else []}
+            func_code[name] = {"code": str(code), "params": paraglobs['params'] if 'params' in paraglobs else []}
+            func_prst[name] = []
             return NewFunc
         else:
             print("Custom Function %s already exists." %name)
@@ -63,12 +64,12 @@ class CustomFunctions():
     def GetP(self):
         return func_prst
 
-    def Delete(self, name, *args):
+    def Delete(self, name, pr=True):
         if name in funcdata:
             del funcdata[name]
             del func_code[name]
             del func_prst[name]
-            if not args:
+            if pr:
                 print("Custom Function %s deleted." %name)
         else:
             print("Custom Function %s does not exist" %name)
