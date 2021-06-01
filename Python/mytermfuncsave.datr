@@ -7,6 +7,9 @@ print("HELLO")
 |params:
 i
 |rels:
+lower parent
+lower parent
+lower parent
 ------------------
 |name:j
 |fname:jM
@@ -34,4 +37,14 @@ num1
 num2
 num3
 |rels:
+------------------
+|name:lower
+|fname:lowerM
+print("hello")
+
+|params:
+|rels:
+hi child
+hi child
+hi child
 ------------------

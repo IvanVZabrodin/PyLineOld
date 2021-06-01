@@ -29,7 +29,7 @@ class Terminal():
             if line == '------------------\n':
                 #structure is self.func.Add("sayhi", "print('HELLO')")
                 self.func.Add(fn, ''.join(curfunc), params=paras)
-                self.Add(n, fn, w=False, l=disl)
+                self.Add(n, fn, w=True, l=disl, startup=True)
                 famsneeded[n] = fams
                 fam, para, fams, paras, curfunc = False, False, {}, [], []
                 disl = ind + 1
@@ -54,7 +54,7 @@ class Terminal():
 
     def standardize(self):
         self.func.Add("geto", "print('Current terminal: ' + active_term.name)\n for ind, comm in enumerate(comms.keys()):\n  print(str(ind + 1) + '. ' + comm)", globs={'comms': self.Objects, 'active_term': active_term})
-        self.func.Add("fam", "if fmt in opposite_rels.keys():\n  objs[comm].family(fmt, comm1)\n else:\n  print('No such family type')", globs={'opposite_rels': opposite_rels, 'objs': self.Comms}, params=['comm', 'fmt', 'comm1'])
+        self.func.Add("fam", "if fmt in opposite_rels.keys():\n  objs[comm].family(comm1, fmt)\n else:\n  print('No such family type')", globs={'opposite_rels': opposite_rels, 'objs': self.Comms}, params=['comm', 'fmt', 'comm1'])
         self.func.Add("delt", "term.Delete(nme)", globs={"term": self}, params={"nme"})
         self.func.Add("ex", "sys.exit()", globs={"sys": sys})
         self.func.Add("getterm", "for ind, term in enumerate(terms.keys()):\n  print(str(ind + 1) + '. ' + term)\n print('Current terminal: ' + active_term.name)", globs={"terms": terms, "active_term": active_term})
@@ -69,12 +69,12 @@ class Terminal():
         self.Add("terminals", "getterm", 'globular')
         self.Add("delterm", delterm)
 
-    def Add(self, name, func_code, bt="static", w=True, l=-1, kw=None):
+    def Add(self, name, func_code, bt="static", w=True, l=-1, kw=None, startup=False):
         if l == -1:
             l = len(self.f.load())
-        NewComm = Command(name, func_code, self, bt, l, w, kwd=kw)
+        NewComm = Command(name, func_code, self, bt, l, w if not startup else True, kwd=kw)
         self.Comms[name] = NewComm
-        if func_code in self.func.Get().keys() and bt != "globular" and w:
+        if func_code in self.func.Get().keys() and bt != "globular" and w and not startup:
             self.f.write("|name:" + name, "|fname:" + func_code, self.func.GetC()[func_code]["code"], "|params:", *self.func.GetC()[func_code]["params"], "|rels:", "------------------")
         return NewComm
 
@@ -91,7 +91,7 @@ class Terminal():
             del self.Comms[name]
             for comm in self.Comms.values():
                 if name in comm.relations.keys():
-                    del comm.relation[name]
+                    del comm.relations[name]
                     del self.Objects[comm.str]["rels"][name]
                 if comm.l >= c.l:
                     comm.l -= lend
@@ -144,18 +144,14 @@ class Command():
             self.relations[ostr] = relt
             self.term.Objects[self.str]["rels"][ostr] = relt
             if self.w:
-                self.term.Delete(self.str, pr=True)
-                self.term.Delete(ostr, True)
-                self.term.Objects[self.str] = {"rels": self.relations, "fnccon": self.func_con}
-                self.term.Comms[self.str] = self
-                if not self.bt == "globular" and not callable(self.fncod):
-                    self.l = len(self.term.f.load())
-                    self.term.f.write("|name:" + self.str, "|fname:" + self.fncod ,self.term.func.GetC()[self.fncod]["code"], "|params:", *self.term.func.GetC()[self.fncod]["params"], "|rels:", *[obj + " " + rel for obj, rel in self.relations.items()], "------------------")
-                self.term.Objects[ostr] = {"rels": cmd.relations, "fnccon": cmd.func_con}
-                self.term.Comms[ostr] = cmd
-                if not cmd.bt == "globular" and not callable(cmd.fncod):
-                    cmd.l = len(cmd.term.f.load())
-                    cmd.term.f.write("|name:" + cmd.str, "|fname:" + cmd.fncod, cmd.term.func.GetC()[cmd.fncod]["code"],"|params:", *cmd.term.func.GetC()[cmd.fncod]["params"], "|rels:", *[obj + " " + rel for obj, rel in cmd.relations.items()], "------------------")
+                cafters = list(self.term.Comms.values())[list(self.term.Comms.keys()).index(self.str):]
+                for cafter in cafters:
+                    cafter.l += 1
+                self.term.f.inser([ostr + " " + relt, self.term.f.load().index("------------------\n", self.l)])
+                cafters = list(self.term.Comms.values())[list(self.term.Comms.keys()).index(ostr):]
+                for cafter in cafters:
+                    cafter.l += 1
+                self.term.f.inser([self.str + " " + opposite_rels[relt], self.term.f.load().index("------------------\n", self.term.Comms[ostr].l)])
 
         except KeyError:
              #raise self.term.exc.Get()["CommandError"]("You are trying to attach a %s relation type to the unknown Command object %s."%(opposite_rels[relt], ostr))
@@ -181,7 +177,7 @@ def call(term, comm):
             try:
                 term.Objects[comm[item]]["fnccon"].run(*comm[item + 1 if found else len(comm) - 1:])
             except KeyError or IndexError:
-                print("Arguments do not work.")
+                print("Arguments do not work")
         else:
             print("The command is invalid.")
     else:
