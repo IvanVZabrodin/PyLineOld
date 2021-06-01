@@ -1,0 +1,37 @@
+|name:hi
+|fname:hiM
+print("HELLO")
+
+ print(i)
+
+|params:
+i
+|rels:
+------------------
+|name:j
+|fname:jM
+print(' '.join(txt))
+
+|params:
+*txt
+|rels:
+------------------
+|name:getmults
+|fname:getmultsM
+print(int(num1) * int(num2))
+
+|params:
+num1
+num2
+|rels:
+------------------
+|name:div
+|fname:divM
+print(int(num1) + int(num2) + int(num3))
+
+|params:
+num1
+num2
+num3
+|rels:
+------------------

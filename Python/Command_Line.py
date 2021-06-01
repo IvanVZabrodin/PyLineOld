@@ -1,17 +1,22 @@
 import types, string
 import os, sys
-from CustomItems import *
-from PyMation.files import *
+from PyMation import *
 os.system("title " + "PyLine")
+
+terms = []
 
 class Terminal():
     def __init__(self, name):
+        self.name = name
         self.Objects = {}
         self.exc = CustomExceptions()
         self.func = CustomFunctions()
         self.exc.Add("CommandError")
         self.Comms = {}
-        self.f = Pfile(name + "funcsave.datr", os.path.dirname(os.path.realpath(__file__)))
+        self.f = Pfile(name + "funcsave.datr", filedir(__file__))
+        self.terms = Pfile("terminals.datr", filedir(__file__))
+        if not name in self.terms.load():
+            self.terms.write(name)
         famsneeded = {}
         curfunc = []
         paras = []
@@ -23,7 +28,7 @@ class Terminal():
         for ind, line in enumerate(self.f.load()):
             print(disl)
             if line == '------------------\n':
-                #structure is myterm.func.Add("sayhi", "print('HELLO')")
+                #structure is self.func.Add("sayhi", "print('HELLO')")
                 self.func.Add(fn, ''.join(curfunc), params=paras)
                 nc = self.Add(n, fn, w=False, l=disl)
                 famsneeded[n] = fams
@@ -48,12 +53,28 @@ class Terminal():
         for nam, famn in famsneeded.items():
             for obj, r in famn.items():
                 self.Comms[nam].family(obj, r)
-                
 
-    def Add(self, name, func_code, bt="static", w=True, l=-1):
+    def standardize(self):
+        terms.append(self.name)
+
+        self.func.Add("geto", "print(objs)", globs={'objs': self.Objects})
+        self.func.Add("fam", "if fmt in opposite_rels.keys():\n  objs[comm].family(fmt, comm1)\n else:\n  print('No such family type')", globs={'opposite_rels': opposite_rels, 'objs': self.Comms}, params=['comm', 'fmt', 'comm1'])
+        self.func.Add("delt", "term.Delete(nme)", globs={"term": self}, params={"nme"})
+        self.func.Add("ex", "sys.exit()", globs={"sys": sys})
+        self.func.Add("termaction", "thisterm = Terminal(name)\n thisterm.standardize()\n active_term = thisterm", globs={'Terminal': Terminal, 'active_term': active_term}, params=['name'])
+
+        self.Add("getobjs", 'geto', 'globular')
+        self.Add("create", funcmake)
+        self.Add("edit", funcmake, kw=True)
+        self.Add("family", 'fam', "globular")
+        self.Add("delete", "delt", "globular")
+        self.Add("stop", "ex", "globular")
+        self.Add('terminal', 'termaction', 'globular')
+
+    def Add(self, name, func_code, bt="static", w=True, l=-1, kw=None):
         if l == -1:
             l = len(self.f.load())
-        NewComm = Command(name, func_code, self, bt, l, w)
+        NewComm = Command(name, func_code, self, bt, l, w, kwd=kw)
         self.Comms[name] = NewComm
         if func_code in self.func.Get().keys() and bt != "globular" and w:
             self.f.write("|name:" + name, "|fname:" + func_code, self.func.GetC()[func_code]["code"], "|params:", *self.func.GetC()[func_code]["params"], "|rels:", "------------------")
@@ -86,16 +107,20 @@ class Terminal():
 active_term = Terminal
 
 class func_controller():
-    def __init__(self, func_code, build_type, termin):
+    def __init__(self, func_code, build_type, termin, kwrd=None):
         self.func_cd = func_code
         self.bt = build_type
         self.term = termin
+        self.kw = kwrd
 
     def run(self, *params):
         global active_term
         active_term = self.term
         try:
-            self.func_cd(*params)
+            if self.kw:
+                self.func_cd(*params, kwd=self.kw)
+            else:
+                self.func_cd(*params)
         except TypeError:
             print('Arguments are incorrect')
            
@@ -103,14 +128,14 @@ class func_controller():
 #define relationships opposite
 opposite_rels = {"child": "parent", "parent": "child"}
 class Command():
-    def __init__(self, strd, func_code, termin, bt, line=-1, write=True):
+    def __init__(self, strd, func_code, termin, bt, line=-1, write=True, kwd=None):
         self.str = strd
         self.bt = bt
         self.w = write
         self.term = termin
         self.relations = {}
         self.fncod = func_code
-        self.func_con = func_controller(self.term.func.Get()[func_code] if not callable(func_code) else func_code, bt, self.term)
+        self.func_con = func_controller(self.term.func.Get()[func_code] if not callable(func_code) else func_code, bt, self.term, kwrd=kwd)
         self.l = line
         self.term.Objects[strd] = {"rels": self.relations, "fnccon": self.func_con}
 
@@ -191,21 +216,50 @@ def inp(lines: list, pasa, inc):
 
 
 
-def funcmake(name, *paras):
-    if name in active_term.func.Get().keys():
-        print("Function %s already exists."%name)
-        return
-    lins = []
-    paras = list(paras)
-    l = 0
-    parastest = []
-    brk = False
+def funcmake(name, *paras, kwd=None):
+    if name + "M" in active_term.func.Get().keys():
+        if not kwd:
+            print("Function %s already exists."%name)
+            return
+    else:
+        if kwd:
+            print("Function %s does not exist."%name)
+            return
+    if not kwd:
+        lins = []
+        paras = list(paras)
+        l = 0
+        parastest = []
+        brk = False
+    else:
+        paras = active_term.func.GetC()[name + "M"]["params"]
+        parastest = active_term.func.GetP()[name + "M"]
+        lins = [active_term.func.GetC()[name + "M"]["code"]]
+        
     def parastart():
+        nonlocal kwd
+        if kwd:
+            pars = input("Parameters: ")
+            nonlocal parastest, paras
+            oldpt = parastest
+            del parastest[:]
+            oldp = paras
+            paras = pars.split(" ")
+            print(paras)
+            if paras == ['']:
+                paras = []
+                return
         if paras:
             for para in paras:
-                if set(para).difference(string.ascii_letters + string.digits + '*'):
+                if para == '':
+                    print("Unexpected parameter name")
+                    paras = oldp
+                    parastest = oldpt
+                    return
+                elif set(para).difference(string.ascii_letters + string.digits + '*'):
                     print("Symbols not supported")
-                    brk = True
+                    paras = oldp
+                    parastest = oldpt
                     return
                 elif para[0] == "*":
                     stop = False
@@ -220,7 +274,8 @@ def funcmake(name, *paras):
                             run += 1
                 elif "**" in para:
                     print("Kwargs are not supported yet.")
-                    brk = True
+                    paras = oldp
+                    parastest = oldpt
                     return
                     #stop = False
                     #run = 1
@@ -241,9 +296,8 @@ def funcmake(name, *paras):
                     else:
                         print("In the error check %s will be %s."%(para, spec))
                         parastest.append(spec)
-    parastart()
-    if brk:
-        return
+    if not kwd:
+        parastart()
     def useless():
         pass
     
@@ -252,7 +306,7 @@ def funcmake(name, *paras):
     while incorrect:
         r += 1
         while lins[-2:].count(" \n") < 2:
-            i = inp(lins, useless, incorrect)
+            i = inp(lins, useless if not kwd else parastart, incorrect)
             if i == False:
                 incorrect = i
         if not "" in lins:
@@ -262,14 +316,17 @@ def funcmake(name, *paras):
                 NF = types.FunctionType(NC.co_consts[0], globals(), name)
                 if raises(NF, parastest):
                     print("Error, please try again.")
-                    lins = lins[:-2]
+                    lins = lins[-2:]
                     continue
             except Exception as e:
                 print(e)
                 print("Error, please try again.")
-                lins = lins[:-2]
+                lins = lins[-2:]
                 continue
             else:
+                if kwd:
+                    active_term.func.Delete(str(name + "M"), pr=False)
+                    active_term.Delete(name, pr=False)
                 active_term.func.Add(str(name + "M"), ''.join(lins[:-2]), params=paras)
                 active_term.Add(name, str(name + "M"))
                 active_term.func.AddP(str(name + "M"), parastest)
@@ -277,96 +334,12 @@ def funcmake(name, *paras):
 
 
 
-
-
-def funcedit(name):
-    if not name + "M" in active_term.func.Get().keys():
-        print("Function %s does not exist."%name)
-        return
-    paras = active_term.func.GetC()[name + "M"]["params"]
-    parastest = active_term.func.GetP()[name + "M"]
-    def parag():
-        pars = input("Parameters: ")
-        nonlocal parastest, paras
-        oldpt = parastest
-        del parastest[:]
-        oldp = paras
-        paras = pars.split(" ")
-        for para in paras:
-            if set(para).difference(string.ascii_letters + string.digits + '*'):
-                print("Symbols not supported")
-                paras = oldp
-                parastest = oldpt
-                return
-            elif para[0] == "*":
-                stop = False
-                run = 1
-                while not stop:
-                    spec = input("%s|%s|Value: "%(para, run))
-                    if spec == "||stop":
-                        stop = True
-                    else:
-                        print("In the error check item %s in %s will be %s."%(run, para, spec))
-                        parastest.append(spec)
-                        run += 1
-            elif "**" in para:
-                print("Kwargs are not supported yet.")
-                return
-                #stop = False
-                #run = 1
-                #while not stop:
-                #    speck = input("%s|%s|Keyword: "%(para, run))
-                #    specv = input("%s|%s|Value: "%(para, speck))
-
-                #    if "||stop" in [speck, specv]:
-                #        stop = True
-                #    else:
-                #        print("In the error check %s in %s will be %s."%(speck, para, specv))
-                #        parastest.append()
-                #        run += 1
-            else:
-                spec = input("%s|Value: "%(para))
-                if spec == "||stop":
-                    stop = True
-                else:
-                    print("In the error check %s will be %s."%(para, spec))
-                    parastest.append(spec)
-    lins = [active_term.func.GetC()[name + "M"]["code"]]
-    incorrec = True
-    while incorrec:
-        while lins[-2:].count(" \n") < 2:
-            i = inp(lins, parag, incorrec)
-            if i == False:
-                incorrec = i
-        if not "" in lins:
-            NC = compile("def "+name+"("+(', '.join(paras) if paras else "")+"):\n "+''.join(lins[:-2]), name, "exec")
-            NF = types.FunctionType(NC.co_consts[0], globals(), name)
-            if raises(NF, parastest):
-                print("Error, please try again.")
-                lins = lins[:-2]
-                continue
-            else:
-                active_term.func.Delete(str(name + "M"), pr=False)
-                active_term.Delete(name, pr=False)
-                active_term.func.Add(str(name + "M"), ''.join(lins[:-2]), params=paras)
-                active_term.Add(name, name + "M")
-                active_term.func.AddP(name + "M", parastest)
-                incorrec = False
-
-myterm = Terminal("myterm")
-
-myterm.func.Add("geto", "print(objs)", globs={'objs': myterm.Objects})
-myterm.func.Add("fam", "if fmt in opposite_rels.keys():\n  objs.Get()[comm].family(fmt, comm1)\n else:\n  print('No such family type')", globs={'opposite_rels': opposite_rels, 'objs': myterm}, params=['comm', 'fmt', 'comm1'])
-myterm.func.Add("delt", "term.Delete(nme)", globs={"term": myterm}, params={"nme"})
-myterm.func.Add("ex", "sys.exit()", globs={"sys": sys})
-
-myterm.Add("getobjs", 'geto', 'globular')
-myterm.Add("create", funcmake)
-myterm.Add("edit", funcedit)
-myterm.Add("family", 'fam', "globular")
-myterm.Add("delete", "delt", "globular")
-myterm.Add("stop", "ex", "globular")
+active_term = Pfile("terminals.datr", filedir(__file__)).load()[-1]
+for term in Pfile("terminals.datr", filedir(__file__)).load():
+    term = Terminal(term[-2])
+    Terminal.standardize(term)
+    
 
 command = input("Command: ")
 
-call(myterm, command)
+call(active_term, command)
