@@ -3,7 +3,7 @@ import os, sys
 from PyMation import *
 os.system("title " + "PyLine")
 
-terms = []
+terms = {}
 
 class Terminal():
     def __init__(self, name):
@@ -15,8 +15,8 @@ class Terminal():
         self.Comms = {}
         self.f = Pfile(name + "funcsave.datr", filedir(__file__))
         self.terms = Pfile("terminals.datr", filedir(__file__))
-        if not name in self.terms.load():
-            self.terms.write(name)
+        if not name in self.terms.load() and not name + "\n" in self.terms.load():
+            self.terms.inser([name, -1])
         famsneeded = {}
         curfunc = []
         paras = []
@@ -26,15 +26,13 @@ class Terminal():
         n = ""
         disl = 0
         for ind, line in enumerate(self.f.load()):
-            print(disl)
             if line == '------------------\n':
                 #structure is self.func.Add("sayhi", "print('HELLO')")
                 self.func.Add(fn, ''.join(curfunc), params=paras)
-                nc = self.Add(n, fn, w=False, l=disl)
+                self.Add(n, fn, w=False, l=disl)
                 famsneeded[n] = fams
                 fam, para, fams, paras, curfunc = False, False, {}, [], []
                 disl = ind + 1
-                print(n + " " + str(nc.l))
             elif line[:6] == "|name:":
                 n = line[6:-1]
             elif line[:7] == "|fname:":
@@ -55,21 +53,21 @@ class Terminal():
                 self.Comms[nam].family(obj, r)
 
     def standardize(self):
-        terms.append(self.name)
-
-        self.func.Add("geto", "print(objs)", globs={'objs': self.Objects})
+        self.func.Add("geto", "print('Current terminal: ' + active_term.name)\n for ind, comm in enumerate(comms.keys()):\n  print(str(ind + 1) + '. ' + comm)", globs={'comms': self.Objects, 'active_term': active_term})
         self.func.Add("fam", "if fmt in opposite_rels.keys():\n  objs[comm].family(fmt, comm1)\n else:\n  print('No such family type')", globs={'opposite_rels': opposite_rels, 'objs': self.Comms}, params=['comm', 'fmt', 'comm1'])
         self.func.Add("delt", "term.Delete(nme)", globs={"term": self}, params={"nme"})
         self.func.Add("ex", "sys.exit()", globs={"sys": sys})
-        self.func.Add("termaction", "thisterm = Terminal(name)\n thisterm.standardize()\n active_term = thisterm", globs={'Terminal': Terminal, 'active_term': active_term}, params=['name'])
+        self.func.Add("getterm", "for ind, term in enumerate(terms.keys()):\n  print(str(ind + 1) + '. ' + term)\n print('Current terminal: ' + active_term.name)", globs={"terms": terms, "active_term": active_term})
 
-        self.Add("getobjs", 'geto', 'globular')
+        self.Add("commands", 'geto', 'globular')
         self.Add("create", funcmake)
         self.Add("edit", funcmake, kw=True)
         self.Add("family", 'fam', "globular")
         self.Add("delete", "delt", "globular")
         self.Add("stop", "ex", "globular")
-        self.Add('terminal', 'termaction', 'globular')
+        self.Add('terminal', termaction)
+        self.Add("terminals", "getterm", 'globular')
+        self.Add("delterm", delterm)
 
     def Add(self, name, func_code, bt="static", w=True, l=-1, kw=None):
         if l == -1:
@@ -103,8 +101,9 @@ class Terminal():
             print("Command %s does not exist" %name)
 
 
+active_term: Terminal = None
 
-active_term = Terminal
+
 
 class func_controller():
     def __init__(self, func_code, build_type, termin, kwrd=None):
@@ -114,8 +113,6 @@ class func_controller():
         self.kw = kwrd
 
     def run(self, *params):
-        global active_term
-        active_term = self.term
         try:
             if self.kw:
                 self.func_cd(*params, kwd=self.kw)
@@ -190,7 +187,7 @@ def call(term, comm):
     else:
         print("The command is invalid.")
     command = input("Command: ")
-    call(term, command)
+    call(active_term, command)
 
 l = 0
 
@@ -252,7 +249,7 @@ def funcmake(name, *paras, kwd=None):
         if paras:
             for para in paras:
                 if para == '':
-                    print("Unexpected parameter name")
+                    print("Unexpected parameter name: ' '")
                     paras = oldp
                     parastest = oldpt
                     return
@@ -316,12 +313,12 @@ def funcmake(name, *paras, kwd=None):
                 NF = types.FunctionType(NC.co_consts[0], globals(), name)
                 if raises(NF, parastest):
                     print("Error, please try again.")
-                    lins = lins[-2:]
+                    lins = lins[:-2]
                     continue
             except Exception as e:
                 print(e)
                 print("Error, please try again.")
-                lins = lins[-2:]
+                lins = lins[:-2]
                 continue
             else:
                 if kwd:
@@ -332,14 +329,59 @@ def funcmake(name, *paras, kwd=None):
                 active_term.func.AddP(str(name + "M"), parastest)
                 incorrect = False
 
+def termaction(name):
+    global active_term
+    if name in terms.keys():
+        active_term = terms[name]
+        print("Terminal changed")
+    else:
+        thisterm = Terminal(name)
+        thisterm.standardize()
+        terms[name] = thisterm
+        active_term = thisterm
+        print("Terminal created and changed")
+
+def delterm(name):
+    global active_term
+    try:
+        terms[name].f.delete()
+        del terms[name]
+    except ValueError:
+        print("No such terminal")
+        return
+    termfile = Pfile("terminals.datr", filedir(__file__))
+    try:
+        termfile.clear(termfile.load().index(name + "\n"))
+    except ValueError:
+        termfile.clear(termfile.load().index(name))
+    print("Terminal deleted")
+    if active_term.name == name:
+        active_term = terms[termfile.load()[-1]]
+        print("New Current Terminal: " + active_term.name)
 
 
-active_term = Pfile("terminals.datr", filedir(__file__)).load()[-1]
-for term in Pfile("terminals.datr", filedir(__file__)).load():
-    term = Terminal(term[-2])
-    Terminal.standardize(term)
+
+
+#               STARTUP               #
+termfile = Pfile("terminals.datr", filedir(__file__)).load()
+active_term = Terminal(termfile[-1])
+active_term.standardize()
+
+print("Compiling Terminals: ")
+
+for ind, i in enumerate(termfile):
+    print("    Compiling " + i[:-1 if ind != len(termfile) - 1 else len(i)])
+
+for term in termfile[:-1]:
+    tterm = Terminal(term[:-1])
+    tterm.standardize()
+    terms[tterm.name] = tterm
+
+terms[active_term.name] = active_term
+print("Terminals compiled")
     
 
 command = input("Command: ")
 
 call(active_term, command)
+#               STARTUP               # 
