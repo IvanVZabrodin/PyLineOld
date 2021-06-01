@@ -6,14 +6,14 @@ The commands available so far are:
 The syntax for PyLine is simple.
 
 <h3>Python</h3>
-`python
+~~~python
 function(parameter, parameter)
-`
+~~~
 
 <h3>PyLine</h3>
-`
+~~~
 function parameter parameter
-`
+~~~
 
 # Commands
 () = parameters  
