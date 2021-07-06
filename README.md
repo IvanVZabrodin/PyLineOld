@@ -6,9 +6,10 @@ The commands available so far are:
 The syntax for PyLine is simple.
 
 <h3>Python</h3>
-```
-function(parameter, parameter)
 ```python
+s = "Python syntax highlighting"
+print s
+```
 
 <h3>PyLine</h3>
 ~~~
