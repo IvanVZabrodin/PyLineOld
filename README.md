@@ -30,7 +30,7 @@ delterm (terminal) - deletes terminal
 delete (command) - deletes command  
 stop - exits PyLine  
 
-#Requirements
+# Requirements
 
 Python 3.9.1 - https://www.python.org/downloads/release/python-391/  
 
