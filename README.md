@@ -6,7 +6,7 @@ The commands available so far are:
 The syntax for PyLine is simple.
 
 <h3>Python</h3>
-<code "lang"="python">
+<code "language"="python">
   function(parameter, parameter)
 </code>
 
