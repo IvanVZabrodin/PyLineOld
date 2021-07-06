@@ -295,15 +295,15 @@ def funcmake(name, *paras, kwd=None):
         pass
     
     incorrect = True
-    r = 0
+    #r = 0
     while incorrect:
-        r += 1
+        #r += 1
         while lins[-2:].count(" \n") < 2:
             i = inp(lins, useless if not kwd else parastart, incorrect)
             if i == False:
                 incorrect = i
         if not "" in lins:
-            if r == 1: lins[0] = lins[0][1:]
+            #if r == 1: lins[0] = lins[0][1:]
             try:
                 NC = compile("def "+name+"("+(', '.join(paras) if paras else "")+"):\n "+''.join(lins[:-2]), name, "exec")
                 NF = types.FunctionType(NC.co_consts[0], globals(), name)

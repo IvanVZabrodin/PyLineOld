@@ -6,7 +6,7 @@ The commands available so far are:
 The syntax for PyLine is simple.
 
 <h3>Python</h3>
-~~~python
+```python
 function(parameter, parameter)
 ~~~
 
@@ -29,3 +29,9 @@ terminals - shows terminals
 delterm (terminal) - deletes terminal  
 delete (command) - deletes command  
 stop - exits PyLine  
+
+#Requirements
+
+Python 3.9.1 - https://www.python.org/downloads/release/python-391/  
+
+PyMation - 'pip install pymation'

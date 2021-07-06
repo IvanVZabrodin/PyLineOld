@@ -10,6 +10,10 @@ i
 lower parent
 lower parent
 lower parent
+lower parent
+lower parent
+lower parent
+lower parent
 ------------------
 |name:j
 |fname:jM
@@ -47,4 +51,23 @@ print("hello")
 hi child
 hi child
 hi child
+hi child
+hi child
+hi child
+hi child
+------------------
+|name:hit
+|fname:hitM
+print("Smack " + who)
+
+|params:
+who
+|rels:
+------------------
+|name:test
+|fname:testM
+print("HI")
+
+|params:
+|rels:
 ------------------
