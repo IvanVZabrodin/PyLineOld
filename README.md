@@ -7,13 +7,13 @@ The syntax for PyLine is simple.
 
 <h3>Python</h3>
 `
-function(parameter, parameter)
+  function(parameter, parameter)
 `
 
 <h3>PyLine</h3>
-'
-function parameter parameter
-'
+`
+  function parameter parameter
+`
 
 # Commands
 () = parameters  
