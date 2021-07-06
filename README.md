@@ -8,7 +8,7 @@ The syntax for PyLine is simple.
 <h3>Python</h3>
 ```python
 function(parameter, parameter)
-~~~
+```
 
 <h3>PyLine</h3>
 ~~~
